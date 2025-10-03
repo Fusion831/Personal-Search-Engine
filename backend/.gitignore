@@ -1,0 +1,244 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py.cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff
+instance/
+.webassets-cache
+
+# Scrapy stuff
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# Package managers
+.pdm-python
+.pdm-build/
+.pixi
+__pypackages__/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+celerybeat-schedule.db
+celerybeat-schedule.bak
+celery_worker.log
+celery_beat.log
+
+# Redis
+*.rdb
+*.aof
+*.pid
+redis-server.log
+dump.rdb
+
+# Message brokers
+mnesia/
+rabbitmq/
+rabbitmq-data/
+activemq-data/
+
+# SageMath
+*.sage.py
+
+# Environments
+.env
+.envrc
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE settings
+.spyderproject
+.spyproject
+.ropeproject
+
+# Documentation
+/site
+
+# Type checkers
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+
+# Debug symbols
+cython_debug/
+
+# FastAPI specific
+*.db
+app.db
+test.db
+instance/
+.secrets/
+uploads/
+media/
+static/uploads/
+logs/
+*.log
+
+# PostgreSQL
+*.sql
+*.sql.bak
+*.pgsql
+*.dump
+pg_log/
+postgresql.conf
+pg_hba.conf
+
+# AI/ML Models and Data
+models/
+*.pkl
+*.pickle
+*.joblib
+*.h5
+*.hdf5
+*.pt
+*.pth
+*.onnx
+*.pb
+*.tflite
+*.model
+data/
+datasets/
+embeddings/
+vectors/
+*.vec
+*.bin
+*.npy
+*.npz
+sentence_transformers_cache/
+transformers_cache/
+huggingface_cache/
+.cache/
+model_cache/
+
+# Google API Keys and Secrets
+google-credentials.json
+service-account.json
+*.p12
+*.key
+*.pem
+gcp-credentials.json
+google-cloud-credentials.json
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+docker-compose.local.yml
+.docker/
+
+# IDE and Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Environment variables and configuration
+.env.local
+.env.development
+.env.production
+.env.staging
+.env.test
+config.ini
+settings.ini
+secrets.ini
+
+# Application specific
+alembic/versions/*.py
+!alembic/versions/README
+migration_logs/
+*.pid
+*.sock
