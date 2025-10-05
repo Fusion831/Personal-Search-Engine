@@ -5,3 +5,5 @@ python-dotenv
 celery
 redis
 pypdf
+sentence-transformers
+faiss-cpu
