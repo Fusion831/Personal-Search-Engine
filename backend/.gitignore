@@ -194,7 +194,7 @@ gcp-credentials.json
 google-cloud-credentials.json
 
 # Docker
-.dockerignore
+
 docker-compose.override.yml
 docker-compose.local.yml
 .docker/
