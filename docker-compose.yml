@@ -14,7 +14,7 @@ services:
       - redis
     environment:
       - PYTHONPATH=/app
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
   frontend:
     build: ./frontend
@@ -57,7 +57,7 @@ services:
       - redis
     environment:
       - PYTHONPATH=/app
-    command: celery -A worker.celery_app worker --loglevel=info
+    command: python -m celery -A worker.celery_app worker --loglevel=info
 
 volumes:
   postgres_data:

@@ -1,0 +1,17 @@
+# Node.js dependencies
+node_modules
+
+# Build output
+dist
+build
+
+# IDE and editor folders
+.vscode/
+.idea/
+
+# Environment files
+.env
+
+# Log files
+npm-debug.log*
+yarn-error.log*

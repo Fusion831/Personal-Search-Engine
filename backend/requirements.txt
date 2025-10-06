@@ -1,9 +1,0 @@
-fastapi
-uvicorn
-psycopg2-binary
-python-dotenv
-celery
-redis
-pypdf
-sentence-transformers
-faiss-cpu
