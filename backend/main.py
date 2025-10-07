@@ -1,5 +1,8 @@
 from fastapi import FastAPI,File, UploadFile
 from worker import process_document
+from database import engine, SessionLocal
+
+models.base.metadata.create_all(bind=engine)
 
 
 app = FastAPI()
