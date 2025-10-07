@@ -10,4 +10,8 @@ class DocumentChunk(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     content: Mapped[str] = mapped_column(String, nullable=False)
     embedding: Mapped[list[float]] = mapped_column(Vector(384))
+
+
+class QueryRequest(BaseModel):
+    query: str
     
