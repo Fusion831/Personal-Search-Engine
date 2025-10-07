@@ -1,8 +1,10 @@
 from fastapi import FastAPI,File, UploadFile
+from backend import models
 from worker import process_document
 from database import engine, SessionLocal
+from models import DocumentChunk
 
-models.base.metadata.create_all(bind=engine)
+models.Base.metadata.create_all(bind=engine)
 
 
 app = FastAPI()
