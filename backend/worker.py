@@ -5,6 +5,8 @@ from pypdf import PdfReader
 from sentence_transformers import SentenceTransformer
 from io import BytesIO
 import logging
+from database import SessionLocal, engine, Base
+from models import DocumentChunk
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -27,25 +29,49 @@ model = SentenceTransformer("all-MiniLM-L6-v2")
 
 
 @celery_app.task
+@celery_app.task
 def process_document(file_contents):
+    db = None 
     try:
+        
+        db = SessionLocal()
+        logger.info("Database session started.")
+
+        
         reader = PdfReader(BytesIO(file_contents))
-        text =""
+        text = ""
         for page in reader.pages:
             text += page.extract_text() + "\n"
 
         chunks = chunkText(text, chunkSize=1000, chunkOverlap=200)
         embeddings = model.encode(chunks)
-        logger.info(f"Processed {len(chunks)} chunks.")
-        for i, chunk in enumerate(chunks):
-            logger.info(f"Chunk {i+1}: {chunk[:50]}...")  
-            logger.info(f"Embedding {i+1}: {embeddings.shape}")
-        return {"status": "success", "num_chunks": len(chunks)}
+        logger.info(f"Created {len(chunks)} chunks and embeddings.")
 
         
+        for chunk, embedding in zip(chunks, embeddings):
+            new_chunk_obj = DocumentChunk(content=chunk, embedding=embedding)
+            db.add(new_chunk_obj)
+
+        
+        db.commit()
+        logger.info("Successfully committed all chunks to the database.")
+        
+        return {"status": "success", "num_chunks": len(chunks)}
+
     except Exception as e:
-        logger.error(f"Error processing document: {e}")
+        logger.error(f"An error occurred: {e}")
+        if db:
+            db.rollback()  
         return {"status": "error", "message": str(e)}
+
+    finally:
+        
+        if db:
+            db.close()
+            logger.info("Database session closed.")
+
+        
+    
 
 def chunkText(text, chunkSize=1000, chunkOverlap=200):
         step = chunkSize - chunkOverlap
