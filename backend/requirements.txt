@@ -7,6 +7,6 @@ sentence-transformers
 SQLAlchemy
 psycopg2-binary
 python-dotenv
-google-generativeai
+google-genai
 python-multipart
 pgvector

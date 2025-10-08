@@ -4,13 +4,18 @@ import models
 from worker import process_document, model
 from database import engine, SessionLocal
 from models import DocumentChunk, QueryRequest
-import google.generativeai as genai
-from google.generativeai.generative_models import GenerativeModel
-from google.generativeai.client import configure
-import os
-from google.generativeai.types import GenerationConfig
-from dotenv import load_dotenv
 
+from google import genai
+from google.genai import types
+
+import os
+
+from dotenv import load_dotenv
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -18,11 +23,10 @@ load_dotenv()
 models.Base.metadata.create_all(bind=engine)
 
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if not GEMINI_API_KEY:
-    raise ValueError("GEMINI_API_KEY not found in environment variables")
-genai.configure(api_key=GEMINI_API_KEY) #type: ignore
-gemini_model = genai.GenerativeModel('gemini-pro') #type: ignore
+client = genai.Client()
+
+
+
 
 
 SYSTEM_PROMPT = """You are a helpful AI assistant that answers questions based on the provided context.
@@ -67,15 +71,12 @@ async def query_document(request: QueryRequest):
         context = "\n\n".join([f"[Chunk {i+1}]: {chunk.content}" 
                                for i, chunk in enumerate(similar_chunks)])
         prompt = SYSTEM_PROMPT.format(context=context, query=request.query)
-        generation_config = genai.GenerationConfig( #type: ignore
-            temperature=0.2,
-            max_output_tokens=800,
-            top_p=0.8,
-            top_k=40
-        )
-        response = gemini_model.generate_content(
-            prompt,
-            generation_config=generation_config
+        response = client.models.generate_content(
+            model = "gemini-1.5-flash",
+            contents = prompt,
+            config=types.GenerateContentConfig(
+        thinking_config=types.ThinkingConfig(thinking_budget=0) # Disables thinking
+    ),
         )
         return {"answer": response.text, "source_chunks": context}
         
@@ -85,6 +86,5 @@ async def query_document(request: QueryRequest):
         if db is not None:
             db.close()
 
-    
 
-    
+
