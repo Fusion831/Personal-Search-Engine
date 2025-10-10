@@ -1,2 +1,5 @@
-# Personal-Search-Engine
-A secure, private web portal where you can upload your personal documents (PDFs, notes, articles) and ask natural language questions to get answers sourced directly from your own knowledge base.
+# Personal Search Engine - RAG Application
+
+A full-stack Retrieval-Augmented Generation (RAG) application that allows users to upload documents and ask questions about them using Google Gemini AI.
+
+
