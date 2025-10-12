@@ -63,6 +63,77 @@
 }
 
 
+.messageContent h1,
+.messageContent h2,
+.messageContent h3,
+.messageContent h4,
+.messageContent h5,
+.messageContent h6 {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.messageContent h1 { font-size: 1.5rem; }
+.messageContent h2 { font-size: 1.3rem; }
+.messageContent h3 { font-size: 1.1rem; }
+
+.messageContent p {
+  margin: 0.5rem 0;
+}
+
+.messageContent ul,
+.messageContent ol {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.messageContent li {
+  margin: 0.25rem 0;
+}
+
+.messageContent code {
+  background-color: rgba(0, 0, 0, 0.2);
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+.messageContent pre {
+  background-color: rgba(0, 0, 0, 0.3);
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 0.5rem 0;
+}
+
+.messageContent pre code {
+  background-color: transparent;
+  padding: 0;
+}
+
+.messageContent blockquote {
+  border-left: 3px solid var(--accent-color);
+  padding-left: 1rem;
+  margin: 0.5rem 0;
+  opacity: 0.8;
+}
+
+.messageContent a {
+  color: var(--accent-light);
+  text-decoration: underline;
+}
+
+.messageContent strong {
+  font-weight: 600;
+}
+
+.messageContent em {
+  font-style: italic;
+}
+
+
 .message:hover {
   transform: translateY(-1px);
 }
