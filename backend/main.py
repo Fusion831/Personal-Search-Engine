@@ -31,47 +31,63 @@ client = genai.Client()
 
 
 
-SYSTEM_PROMPT = """SYSTEM_PROMPT = <prompt>
-    <role>
-        You are a world-class AI research assistant. Your sole purpose is to provide precise, factual answers based ONLY on the text provided in the <context> section.
-    </role>
+SYSTEM_PROMPT = """<prompt>
+<role>
+You are a world-class AI research assistant. Your purpose is to provide precise, factual answers based ONLY on the text provided in the context section.
+</role>
 
-    <context>
-    ---
-    {context}
-    ---
-    </context>
+<context>
+{context}
+</context>
 
-    <user_question>
-    {query}
-    </user_question>
+<user_question>
+{query}
+</user_question>
 
-    <instructions>
-        <thinking_steps>
-            1.  First, deeply analyze the <user_question> to understand the specific information being requested.
-            2.  Next, carefully scan all the text excerpts provided in the <context>. Identify every piece of information that is directly relevant to answering the user's question.
-            3.  Synthesize the relevant information you've found into a draft answer. For each piece of information, make a mental note of its source chunk (e.g., [Chunk 1]).
-            4.  Critically review your draft. Does it directly and fully answer the <user_question>? Is every statement in your draft supported by the <context>? If the information is not sufficient to answer the question, you must conclude that the answer is not available.
-        </thinking_steps>
-        <final_answer_rules>
-            1.  Construct your final answer based ONLY on the synthesis from your thinking steps.
-            2.  If the answer is not found in the context, your entire response must be ONLY the sentence: "I could not find an answer in the provided documents."
-            3.  When you present the final answer, format it using clear Markdown.
-            4.  You MUST cite the source chunk(s) at the end of each relevant sentence, like this:.
-            5.  Do not include any information not present in the <context>.
-        </final_answer_rules>
-    </instructions>
+<instructions>
+<analysis_steps>
+1. Carefully read and understand the user's question
+2. Scan the context to identify all relevant information
+3. Synthesize the information into a coherent answer
+4. Verify that every statement is supported by the context
+</analysis_steps>
 
-    <output_format>
-        First, provide your step-by-step reasoning inside <thinking> tags. After your reasoning, provide the final, user-facing answer inside <answer> tags.
-    </output_format>
+<formatting_rules>
+1. Use proper Markdown formatting for clarity and emphasis:
+   - Use **bold** for important terms, key concepts, and definitions
+   - Use *italics* for emphasis and subtle points
+   - Use bullet points (- or *) or numbered lists (1. 2. 3.) when presenting multiple items
+   - Use headers (## or ###) to organize complex information
+   - Use > for blockquotes if citing specific passages
+2. Structure your answer clearly with paragraphs and proper spacing
+3. Make the response natural and readable - DO NOT include any XML tags in your output
+4. DO NOT include chunk references like [Chunk 1], [Chunk 2] in your response
+</formatting_rules>
+
+<response_rules>
+1. Answer using ONLY information from the context
+2. If the answer is not in the context, respond ONLY with: "I could not find an answer in the provided documents."
+3. Be DETAILED and COMPREHENSIVE in your explanations:
+   - Provide full context and background information
+   - Explain concepts thoroughly with examples when available
+   - Include relevant details, characteristics, and nuances
+   - Elaborate on key points rather than giving brief summaries
+   - Connect related ideas and provide comprehensive understanding
+4. Provide a natural, conversational, and descriptive response without any tags or metadata
+5. Aim for depth and clarity - help the user truly understand the topic
+</response_rules>
+</instructions>
+
+<output_format>
+Provide your answer directly in clean Markdown format without any XML tags, thinking process, or metadata. Give a detailed, well-elaborated response that thoroughly addresses the question.
+</output_format>
 </prompt>"""
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Adjust this to your frontend's origin in production
+    allow_origins=["*"],  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -91,26 +107,51 @@ async def upload_file(file: UploadFile = File(...)):
 
 @app.post("/query")
 async def query_document(request: QueryRequest):
-    """Query the Chunks with the vector embedding to find the most relevant chunks, and complete the RAG pipeline"""
+    """Query the Chunks with the vector embedding to find the most relevant chunks, and complete the RAG pipeline with streaming"""
     db = None
     try:
-        
-        queryVector = model.encode([request.query])[0] #returns a 2D array, but we only need the embedding vector
+        queryVector = model.encode([request.query])[0]
         db = SessionLocal()
         similar_chunks = db.query(DocumentChunk).order_by(DocumentChunk.embedding.l2_distance(queryVector)).limit(5).all()
         context = "\n\n".join([f"[Chunk {i+1}]: {chunk.content}" 
                                for i, chunk in enumerate(similar_chunks)])
         prompt = SYSTEM_PROMPT.format(context=context, query=request.query)
-        response = client.models.generate_content(
-            model = "gemini-2.5-flash",
-            contents = prompt,
-            config=types.GenerateContentConfig(
-        thinking_config=types.ThinkingConfig(thinking_budget=0) # Disables thinking
-    ),
+        
+        async def generate():
+            try:
+                
+                response_stream = client.models.generate_content_stream(
+                    model="gemini-2.5-flash",
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        thinking_config=types.ThinkingConfig(thinking_budget=0)
+                    ),
+                )
+                
+                
+                for chunk in response_stream:
+                    if chunk.text:
+                        yield f"data: {chunk.text}\n\n"
+                
+                
+                yield "data: [DONE]\n\n"
+                
+            except Exception as e:
+                logger.error(f"Streaming error: {str(e)}")
+                yield f"data: [ERROR] {str(e)}\n\n"
+        
+        return StreamingResponse(
+            generate(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no"
+            }
         )
-        return {"answer": response.text, "source_chunks": context}
         
     except Exception as e:
+        logger.error(f"Query error: {str(e)}")
         return {"error": str(e)}
     finally:
         if db is not None:

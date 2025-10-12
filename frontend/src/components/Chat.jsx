@@ -113,11 +113,19 @@ function Chat({ messages, isLoading, isInitialState, onSendMessage, onFileUpload
   return (
     <div className={styles.chatContainer}>
       <div className={styles.messagesArea}>
-        {messages.map((message) => (
-          <Message key={message.id} message={message} />
-        ))}
+        {messages.map((message, index) => {
+          const isLastMessage = index === messages.length - 1
+          const isStreamingMessage = isLastMessage && message.sender === 'ai' && isLoading
+          return (
+            <Message 
+              key={message.id} 
+              message={message} 
+              isStreaming={isStreamingMessage}
+            />
+          )
+        })}
         
-        {isLoading && (
+        {isLoading && messages.length === 0 && (
           <div className={styles.loadingIndicator}>
             <div className={styles.loadingDots}>
               <span></span>

@@ -1,14 +1,71 @@
 # Python virtual environment
-.venv
-venv
+.venv/
+venv/
+env/
+ENV/
 
-# Python cache files
+# Python cache and compiled files
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.mypy_cache/
+.ruff_cache/
 
 # IDE and editor folders
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
+.DS_Store
 
 # Environment files
 .env
+.env.local
+.env.*.local
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+docs/
+README*
+LICENSE
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Logs
+*.log
+logs/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Model cache (will be downloaded in container)
+models/
+.cache/
+
+# Misc
+.dockerignore
+Dockerfile*
+docker-compose*.yml

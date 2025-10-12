@@ -1,7 +1,7 @@
 import styles from './Message.module.css'
 import ReactMarkdown from 'react-markdown'
 
-function Message({ message }) {
+function Message({ message, isStreaming }) {
   const isUser = message.sender === 'user'
   const isError = message.isError
 
@@ -12,7 +12,10 @@ function Message({ message }) {
           {isUser ? (
             message.text
           ) : (
-            <ReactMarkdown>{message.text}</ReactMarkdown>
+            <>
+              <ReactMarkdown>{message.text}</ReactMarkdown>
+              {isStreaming && <span className={styles.cursor}>▊</span>}
+            </>
           )}
         </div>
       </div>

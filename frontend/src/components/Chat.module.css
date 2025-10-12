@@ -166,7 +166,6 @@
   transform: translateX(4px);
 }
 
-/* Conversation State Styles */
 .chatContainer {
   flex: 1;
   display: flex;
@@ -184,7 +183,7 @@
   gap: 1rem;
 }
 
-/* Loading Indicator */
+
 .loadingIndicator {
   display: flex;
   align-items: center;
@@ -233,7 +232,7 @@
   color: var(--text-secondary);
 }
 
-/* Input Form */
+
 .inputForm {
   display: flex;
   gap: 0.75rem;

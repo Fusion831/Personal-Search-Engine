@@ -14,11 +14,20 @@ function App() {
 
 
   const handleSendMessage = async (question) => {
-    
     const userMessage = { id: Date.now(), text: question, sender: 'user' }
     setMessages(prev => [...prev, userMessage])
     setIsLoading(true)
     setError(null)
+
+    
+    const aiMessageId = Date.now() + 1
+    const aiMessage = {
+      id: aiMessageId,
+      text: '',
+      sender: 'ai',
+      sources: null
+    }
+    setMessages(prev => [...prev, aiMessage])
 
     try {
       const response = await fetch('/api/query', {
@@ -33,31 +42,60 @@ function App() {
         throw new Error('Failed to get response from server')
       }
 
-      const data = await response.json()
       
-      
-      if (data.error) {
-        throw new Error(data.error)
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let accumulatedText = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        
+        if (done) {
+          break
+        }
+
+        const chunk = decoder.decode(value, { stream: true })
+        const lines = chunk.split('\n')
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6) 
+            
+            if (data === '[DONE]') {
+              
+              break
+            } else if (data.startsWith('[ERROR]')) {
+              
+              throw new Error(data.slice(8))
+            } else {
+              
+              accumulatedText += data
+              setMessages(prev => 
+                prev.map(msg => 
+                  msg.id === aiMessageId 
+                    ? { ...msg, text: accumulatedText }
+                    : msg
+                )
+              )
+            }
+          }
+        }
       }
-      
-      
-      const aiMessage = {
-        id: Date.now() + 1,
-        text: data.answer || 'No answer provided',
-        sender: 'ai',
-        sources: data.source_chunks
-      }
-      setMessages(prev => [...prev, aiMessage])
+
     } catch (err) {
       setError(err.message)
       
-      const errorMessage = {
-        id: Date.now() + 1,
-        text: 'Sorry, I encountered an error processing your question. Please try again.',
-        sender: 'ai',
-        isError: true
-      }
-      setMessages(prev => [...prev, errorMessage])
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.id === aiMessageId 
+            ? { 
+                ...msg, 
+                text: 'Sorry, I encountered an error processing your question. Please try again.',
+                isError: true 
+              }
+            : msg
+        )
+      )
     } finally {
       setIsLoading(false)
     }
