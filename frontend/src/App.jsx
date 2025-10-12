@@ -19,6 +19,15 @@ function App() {
     setIsLoading(true)
     setError(null)
 
+    // Build chat history from last 10 messages (5 exchanges)
+    // Format: [{ role: 'user', content: '...' }, { role: 'assistant', content: '...' }]
+    const chatHistory = messages
+      .slice(-20) // Get last 20 messages (10 user + 10 AI)
+      .filter(msg => !msg.isError) // Exclude error messages
+      .map(msg => ({
+        role: msg.sender === 'user' ? 'user' : 'assistant',
+        content: msg.text
+      }))
     
     const aiMessageId = Date.now() + 1
     const aiMessage = {
@@ -35,7 +44,10 @@ function App() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ query: question }),
+        body: JSON.stringify({ 
+          query: question,
+          chat_history: chatHistory
+        }),
       })
 
       if (!response.ok) {

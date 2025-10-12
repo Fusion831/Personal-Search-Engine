@@ -44,12 +44,18 @@ You are a world-class AI research assistant. Your purpose is to provide precise,
 {query}
 </user_question>
 
+<chat_history>
+{chat_history}
+</chat_history>
+
 <instructions>
 <analysis_steps>
-1. Carefully read and understand the user's question
+1. Carefully read and understand the user's question, and link it to the chat history if relevant.
 2. Scan the context to identify all relevant information
-3. Synthesize the information into a coherent answer
-4. Verify that every statement is supported by the context
+3. Analyze the chat history to understand the flow of the conversation
+4. Synthesize the information into a coherent answer
+5. Ensure the answer is concise and directly addresses the user's question, and fits into the context of the conversation.
+5. Verify that every statement is supported by the context
 </analysis_steps>
 
 <formatting_rules>
@@ -115,7 +121,20 @@ async def query_document(request: QueryRequest):
         similar_chunks = db.query(DocumentChunk).order_by(DocumentChunk.embedding.l2_distance(queryVector)).limit(5).all()
         context = "\n\n".join([f"[Chunk {i+1}]: {chunk.content}" 
                                for i, chunk in enumerate(similar_chunks)])
-        prompt = SYSTEM_PROMPT.format(context=context, query=request.query)
+        
+        
+        chat_history_text = ""
+        if request.chat_history:
+            chat_history_text = "\n".join([
+                f"{'User' if msg['role'] == 'user' else 'Assistant'}: {msg['content']}"
+                for msg in request.chat_history[-20:]  
+            ])
+        
+        prompt = SYSTEM_PROMPT.format(
+            context=context, 
+            query=request.query, 
+            chat_history=chat_history_text or "No previous conversation"
+        )
         
         async def generate():
             try:

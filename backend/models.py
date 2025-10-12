@@ -14,4 +14,5 @@ class DocumentChunk(Base):
 
 class QueryRequest(BaseModel):
     query: str
+    chat_history: Optional[List[dict]] = None
     
