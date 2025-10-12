@@ -73,7 +73,7 @@ def process_document(file_contents):
         
     
 
-def chunkText(text, chunkSize=1000, chunkOverlap=200):
+def chunkText(text, chunkSize=500, chunkOverlap=100):
         step = chunkSize - chunkOverlap
         chunks =[]
         start = 0
