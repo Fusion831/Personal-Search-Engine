@@ -19,10 +19,9 @@ function App() {
     setIsLoading(true)
     setError(null)
 
-    // Build chat history from last 10 messages (5 exchanges)
-    // Format: [{ role: 'user', content: '...' }, { role: 'assistant', content: '...' }]
+    
     const chatHistory = messages
-      .slice(-20) // Get last 20 messages (10 user + 10 AI)
+      .slice(-20) 
       .filter(msg => !msg.isError) // Exclude error messages
       .map(msg => ({
         role: msg.sender === 'user' ? 'user' : 'assistant',
@@ -114,9 +113,14 @@ function App() {
   }
 
 
-  const handleFileUpload = async (file) => {
+  const handleFileUpload = async (files) => {
+    
+    const fileArray = Array.isArray(files) ? files : [files]
+    
     const formData = new FormData()
-    formData.append('file', file)
+    fileArray.forEach(file => {
+      formData.append('files', file)
+    })
 
     try {
       const response = await fetch('/api/Documents/upload', {
@@ -125,13 +129,23 @@ function App() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to upload file')
+        throw new Error('Failed to upload files')
       }
 
       const data = await response.json()
+
       
+      if (!data.files || !Array.isArray(data.files)) {
+        throw new Error('Invalid response format')
+      }
+
+      const newFiles = data.files.map(fileData => ({
+        name: fileData.filename,
+        id: fileData.task_id,
+        document_id: fileData.document_id
+      }))
       
-      setUploadedFiles(prev => [...prev, { name: file.name, id: data.task_id }])
+      setUploadedFiles(prev => [...prev, ...newFiles])
       
       return { success: true, data }
     } catch (err) {

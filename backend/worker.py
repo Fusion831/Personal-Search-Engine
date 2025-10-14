@@ -30,7 +30,7 @@ model = SentenceTransformer("all-MiniLM-L6-v2")
 
 @celery_app.task
 @celery_app.task
-def process_document(file_contents):
+def process_document(file_contents,document_id):
     db = None 
     try:
         
@@ -49,7 +49,7 @@ def process_document(file_contents):
 
         
         for chunk, embedding in zip(chunks, embeddings):
-            new_chunk_obj = DocumentChunk(content=chunk, embedding=embedding)
+            new_chunk_obj = DocumentChunk(content=chunk, embedding=embedding, document_id=document_id)
             db.add(new_chunk_obj)
 
         

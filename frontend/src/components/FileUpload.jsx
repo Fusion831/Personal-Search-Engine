@@ -11,11 +11,12 @@ function FileUpload({ uploadedFiles, onFileUpload }) {
   }
 
   const handleFileChange = async (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const files = Array.from(e.target.files || [])
+    if (files.length === 0) return
 
     
-    if (file.type !== 'application/pdf') {
+    const nonPdfFiles = files.filter(file => file.type !== 'application/pdf')
+    if (nonPdfFiles.length > 0) {
       setUploadError('Only PDF files are supported')
       return
     }
@@ -23,15 +24,15 @@ function FileUpload({ uploadedFiles, onFileUpload }) {
     setIsUploading(true)
     setUploadError(null)
 
-    const result = await onFileUpload(file)
+    const result = await onFileUpload(files)
 
     setIsUploading(false)
 
     if (!result.success) {
-      setUploadError(result.error || 'Failed to upload file')
+      setUploadError(result.error || 'Failed to upload files')
     }
 
-    
+   
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
