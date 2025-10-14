@@ -130,11 +130,47 @@
   border-radius: 8px;
   transition: all 0.2s ease;
   animation: fadeIn 0.3s ease-in;
+  cursor: pointer;
 }
 
 .fileItem:hover {
   background-color: var(--bg-primary);
   border-color: var(--accent-color);
+}
+
+.fileItem.selected {
+  background-color: rgba(124, 58, 237, 0.15);
+  border-color: var(--accent-color);
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.2);
+}
+
+.fileItem.selected svg {
+  color: var(--accent-color);
+}
+
+.fileItem.selected .fileName {
+  color: var(--accent-color);
+  font-weight: 500;
+}
+
+/* Clear filter button */
+.clearFilterBtn {
+  width: 100%;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  background-color: rgba(124, 58, 237, 0.1);
+  color: var(--accent-color);
+  border: 1px solid var(--accent-color);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clearFilterBtn:hover {
+  background-color: rgba(124, 58, 237, 0.2);
+  transform: translateY(-1px);
 }
 
 .fileItem svg {

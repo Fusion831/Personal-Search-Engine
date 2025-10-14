@@ -144,11 +144,18 @@ async def upload_file(files: list[UploadFile] = File(...)):
 @app.post("/query")
 async def query_document(request: QueryRequest):
     """Query the Chunks with the vector embedding to find the most relevant chunks, and complete the RAG pipeline with streaming"""
+    logger.info(f"Received query request: question={request.question}, document_id={request.document_id}, chat_history={len(request.chat_history) if request.chat_history else 0} messages")
     db = None
     try:
         queryVector = model.encode([request.question])[0]
         db = SessionLocal()
-        similar_chunks = db.query(DocumentChunk).order_by(DocumentChunk.embedding.l2_distance(queryVector)).limit(5).all()
+        
+        # Build query with optional document filtering
+        query = db.query(DocumentChunk)
+        if request.document_id is not None:
+            query = query.filter(DocumentChunk.document_id == request.document_id)
+        
+        similar_chunks = query.order_by(DocumentChunk.embedding.l2_distance(queryVector)).limit(5).all()
         context = "\n\n".join([f"[Chunk {i+1}]: {chunk.content}" 
                                for i, chunk in enumerate(similar_chunks)])
         

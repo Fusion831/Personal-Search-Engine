@@ -8,6 +8,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
   const [uploadedFiles, setUploadedFiles] = useState([])
+  const [selectedDocumentId, setSelectedDocumentId] = useState(null)
 
  
   const isInitialState = messages.length === 0
@@ -44,8 +45,9 @@ function App() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          query: question,
-          chat_history: chatHistory
+          question: question,
+          chat_history: chatHistory,
+          document_id: selectedDocumentId
         }),
       })
 
@@ -169,6 +171,8 @@ function App() {
           <FileUpload 
             uploadedFiles={uploadedFiles}
             onFileUpload={handleFileUpload}
+            selectedDocumentId={selectedDocumentId}
+            onSelectDocument={setSelectedDocumentId}
           />
         )}
       </div>

@@ -1,10 +1,38 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import styles from './FileUpload.module.css'
 
-function FileUpload({ uploadedFiles, onFileUpload }) {
+function FileUpload({ uploadedFiles, onFileUpload, selectedDocumentId, onSelectDocument }) {
   const [isUploading, setIsUploading] = useState(false)
   const [uploadError, setUploadError] = useState(null)
+  const [documents, setDocuments] = useState([])
   const fileInputRef = useRef(null)
+
+  // Fetch documents from backend when component mounts
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      try {
+        const response = await fetch('/api/documents')
+        if (!response.ok) {
+          throw new Error('Failed to fetch documents')
+        }
+        const data = await response.json()
+        setDocuments(data)
+      } catch (error) {
+        console.error('Error fetching documents:', error)
+      }
+    }
+
+    fetchDocuments()
+  }, [uploadedFiles]) // Re-fetch when new files are uploaded
+
+  const handleDocumentClick = (documentId) => {
+    // Toggle selection: if already selected, unselect it
+    if (selectedDocumentId === documentId) {
+      onSelectDocument(null)
+    } else {
+      onSelectDocument(documentId)
+    }
+  }
 
   const handleUploadClick = () => {
     fileInputRef.current?.click()
@@ -56,6 +84,7 @@ function FileUpload({ uploadedFiles, onFileUpload }) {
           ref={fileInputRef}
           type="file"
           accept=".pdf"
+          multiple
           onChange={handleFileChange}
           style={{ display: 'none' }}
         />
@@ -68,7 +97,7 @@ function FileUpload({ uploadedFiles, onFileUpload }) {
       )}
 
       <div className={styles.fileList}>
-        {uploadedFiles.length === 0 ? (
+        {documents.length === 0 ? (
           <div className={styles.emptyState}>
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
@@ -78,15 +107,29 @@ function FileUpload({ uploadedFiles, onFileUpload }) {
             <span>Upload a PDF to get started</span>
           </div>
         ) : (
-          uploadedFiles.map((file, index) => (
-            <div key={index} className={styles.fileItem}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
-                <polyline points="13 2 13 9 20 9"/>
-              </svg>
-              <span className={styles.fileName}>{file.name}</span>
-            </div>
-          ))
+          <>
+            {selectedDocumentId && (
+              <button 
+                className={styles.clearFilterBtn}
+                onClick={() => onSelectDocument(null)}
+              >
+                Clear Filter - Search All Documents
+              </button>
+            )}
+            {documents.map((doc) => (
+              <div 
+                key={doc.id} 
+                className={`${styles.fileItem} ${selectedDocumentId === doc.id ? styles.selected : ''}`}
+                onClick={() => handleDocumentClick(doc.id)}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+                  <polyline points="13 2 13 9 20 9"/>
+                </svg>
+                <span className={styles.fileName}>{doc.title}</span>
+              </div>
+            ))}
+          </>
         )}
       </div>
     </div>
