@@ -85,6 +85,11 @@ SYSTEM_PROMPT = """<prompt>
     </output_format>
 </prompt>"""
 
+
+HyDe_Prompt = """Write a short paragraph that provides a direct and factual answer to the following question. Assume this answer is derived from a relevant document. Do not include any introductory phrases like \"Based on the document...\" or mention that this is a hypothetical answer.
+
+Question: {question}"""
+
 app = FastAPI()
 
 app.add_middleware(
@@ -143,24 +148,51 @@ async def query_document(request: QueryRequest):
     logger.info(f"Received query request: question={request.question}, document_id={request.document_id}, chat_history={len(request.chat_history) if request.chat_history else 0} messages")
     db = None
     try:
-        queryVector = model.encode([request.question])[0]
         db = SessionLocal()
+        transform_prompt = HyDe_Prompt.format(question=request.question)
+        transformed_question = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=transform_prompt,
+            config=types.GenerateContentConfig(
+                thinking_config=types.ThinkingConfig(thinking_budget=0)
+            ),
+        )
+        transformed_question_text = transformed_question.text
+        if transformed_question_text:
+            queryVector = model.encode([transformed_question_text])[0]
+        else:
+            queryVector = model.encode([request.question])[0]
+        
+
         
         # Build query with optional document filtering
         query = db.query(ChildChunk)
         if request.document_id is not None:
-            query = query.filter(ChildChunk.document_id == request.document_id)
+            # Join with ParentChunk to filter by document_id
+            query = query.join(ParentChunk, ChildChunk.parent_chunk_id == ParentChunk.id)\
+                         .filter(ParentChunk.document_id == request.document_id)
 
         similar_chunks = query.order_by(ChildChunk.embedding.l2_distance(queryVector)).limit(10).all()
+        logger.info(f"Found {len(similar_chunks)} similar child chunks")
+        
+        if similar_chunks:
+            logger.info(f"First chunk preview: {similar_chunks[0].content[:100]}...")
+        
         parentChunkIds = [chunk.parent_chunk_id for chunk in similar_chunks]
         parentContexts = db.query(ParentChunk).filter(ParentChunk.id.in_(parentChunkIds)).all() if parentChunkIds else []
         parentContent = [parent.content for parent in parentContexts]
+        logger.info(f"Retrieved {len(parentContexts)} parent chunks for context")
+        
+        if not similar_chunks:
+            logger.warning("No chunks found! Database might be empty or query failed.")
 
         context = "\n\n".join([f"[Chunk {i+1}]: {chunk.content}" 
                                for i, chunk in enumerate(similar_chunks)])
         
         parent_context = "\n\n".join([f"[Parent {i+1}]: {content}" 
                                        for i, content in enumerate(parentContent)])
+        
+        logger.info(f"Child context length: {len(context)}, Parent context length: {len(parent_context)}")
 
         chat_history_text = ""
         if request.chat_history:
@@ -169,11 +201,17 @@ async def query_document(request: QueryRequest):
                 for msg in request.chat_history[-20:]  
             ])
         
+        # Combine both child chunks and parent context for maximum information
+        combined_context = f"{context}\n\n--- BROADER CONTEXT ---\n\n{parent_context}"
+        
         prompt = SYSTEM_PROMPT.format(
-            context=parent_context, 
+            context=combined_context, 
             query=request.question, 
             chat_history=chat_history_text or "No previous conversation"
         )
+        
+        logger.info(f"Prompt length: {len(prompt)} characters")
+        logger.info(f"Context preview: {combined_context[:200]}...")
         
         async def generate():
             try:

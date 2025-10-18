@@ -24,7 +24,7 @@ class ParentChunk(Base):
 class ChildChunk(Base):
     __tablename__ = "children"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    parent_chunk_id: Mapped[int] = mapped_column(Integer, ForeignKey("chunks.id"), nullable=False)
+    parent_chunk_id: Mapped[int] = mapped_column(Integer, ForeignKey("parents.id"), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     embedding: Mapped[list[float]] = mapped_column(Vector(384))
 

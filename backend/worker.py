@@ -7,6 +7,7 @@ from io import BytesIO
 import logging
 from database import SessionLocal, engine, Base
 from models import ChildChunk, ParentChunk
+import re
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -43,12 +44,21 @@ def process_document(file_contents, document_id):
             text += page.extract_text() + "\n"
 
         
+        
+        text = re.sub(r'(?<!\n)\n(?!\n)', ' ', text)  
+        text = re.sub(r'\n{3,}', '\n\n', text)  
+        text = re.sub(r' +', ' ', text)  
+        
+        # Split into paragraphs
+        paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
+        
         parent_chunk_objects = []
         child_chunk_texts = [] 
         parent_child_map = {} 
 
-        for paragraph in text.split("\n"):
-            if not paragraph.strip(): 
+        for paragraph in paragraphs:
+            
+            if len(paragraph) < 50:
                 continue
 
             
