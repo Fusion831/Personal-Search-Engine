@@ -163,36 +163,86 @@ async def query_document(request: QueryRequest):
         else:
             queryVector = model.encode([request.question])[0]
         
+        summary_query = db.query(models.SummaryChunks)
+        if request.document_id is not None:
+            summary_query = summary_query.filter(models.SummaryChunks.document_id == request.document_id)
+        
+        
+        top_summary = summary_query.order_by(models.SummaryChunks.embedding.l2_distance(queryVector)).first()
+        
+        summary_distance = None
+        if top_summary:
+            
+            import numpy as np
+            summary_distance = np.linalg.norm(np.array(top_summary.embedding) - np.array(queryVector))
+            logger.info(f"Top summary from document {top_summary.document_id} with L2 distance: {summary_distance:.4f}")
+            logger.info(f"Summary preview: {top_summary.summary_text[:200]}...")
+        else:
+            logger.warning("No document summaries found")
 
         
-        # Build query with optional document filtering
         query = db.query(ChildChunk)
         if request.document_id is not None:
-            # Join with ParentChunk to filter by document_id
+            
             query = query.join(ParentChunk, ChildChunk.parent_chunk_id == ParentChunk.id)\
                          .filter(ParentChunk.document_id == request.document_id)
 
-        similar_chunks = query.order_by(ChildChunk.embedding.l2_distance(queryVector)).limit(10).all()
+        similar_chunks = query.order_by(ChildChunk.embedding.l2_distance(queryVector)).limit(8).all()
         logger.info(f"Found {len(similar_chunks)} similar child chunks")
         
+        chunk_distance = None
         if similar_chunks:
+            
+            chunk_distance = np.linalg.norm(np.array(similar_chunks[0].embedding) - np.array(queryVector))
+            logger.info(f"Top child chunk L2 distance: {chunk_distance:.4f}")
             logger.info(f"First chunk preview: {similar_chunks[0].content[:100]}...")
         
-        parentChunkIds = [chunk.parent_chunk_id for chunk in similar_chunks]
-        parentContexts = db.query(ParentChunk).filter(ParentChunk.id.in_(parentChunkIds)).all() if parentChunkIds else []
-        parentContent = [parent.content for parent in parentContexts]
-        logger.info(f"Retrieved {len(parentContexts)} parent chunks for context")
+       
+        ROUTING_THRESHOLD = 0.8  
+        use_summary = False
         
-        if not similar_chunks:
-            logger.warning("No chunks found! Database might be empty or query failed.")
-
-        context = "\n\n".join([f"[Chunk {i+1}]: {chunk.content}" 
-                               for i, chunk in enumerate(similar_chunks)])
+        if summary_distance is not None and chunk_distance is not None:
+            
+            if summary_distance < (chunk_distance * ROUTING_THRESHOLD):
+                use_summary = True
+                logger.info(f"ROUTING DECISION: Using SUMMARY (broad question). Summary distance {summary_distance:.4f} < {chunk_distance * ROUTING_THRESHOLD:.4f}")
+            else:
+                logger.info(f"ROUTING DECISION: Using PARENT-CHILD (specific question). Summary distance {summary_distance:.4f} >= {chunk_distance * ROUTING_THRESHOLD:.4f}")
+        elif summary_distance is not None:
+            
+            use_summary = True
+            logger.info("ROUTING DECISION: Using SUMMARY (only summaries available)")
+        else:
+            logger.info("ROUTING DECISION: Using PARENT-CHILD (no summaries available)")
         
-        parent_context = "\n\n".join([f"[Parent {i+1}]: {content}" 
-                                       for i, content in enumerate(parentContent)])
         
-        logger.info(f"Child context length: {len(context)}, Parent context length: {len(parent_context)}")
+        if use_summary and top_summary:
+            
+            final_context = f"[Document Summary]:\n{top_summary.summary_text}"
+            logger.info(f"Using summary context, length: {len(final_context)}")
+        else:
+            
+            parentChunkIds = list(set([chunk.parent_chunk_id for chunk in similar_chunks]))
+            logger.info(f"Found {len(parentChunkIds)} unique parent IDs from {len(similar_chunks)} child chunks")
+            
+            parentContexts = db.query(ParentChunk).filter(ParentChunk.id.in_(parentChunkIds)).all() if parentChunkIds else []
+            parentContent = [parent.content for parent in parentContexts]
+            logger.info(f"Retrieved {len(parentContexts)} unique parent chunks for context")
+            
+            if not similar_chunks:
+                logger.warning("No chunks found! Database might be empty or query failed.")
+            
+            context = "\n\n".join([f"[Chunk {i+1}]: {chunk.content}" 
+                                   for i, chunk in enumerate(similar_chunks)])
+            
+            parent_context = "\n\n".join([f"[Parent {i+1}]: {content}" 
+                                           for i, content in enumerate(parentContent)])
+            
+            
+            final_context = f"{context}\n\n--- BROADER CONTEXT ---\n\n{parent_context}"
+            logger.info(f"Child context length: {len(context)}, Parent context length: {len(parent_context)}")
+        
+        logger.info(f"Final context length: {len(final_context)}")
 
         chat_history_text = ""
         if request.chat_history:
@@ -201,17 +251,14 @@ async def query_document(request: QueryRequest):
                 for msg in request.chat_history[-20:]  
             ])
         
-        # Combine both child chunks and parent context for maximum information
-        combined_context = f"{context}\n\n--- BROADER CONTEXT ---\n\n{parent_context}"
-        
         prompt = SYSTEM_PROMPT.format(
-            context=combined_context, 
+            context=final_context, 
             query=request.question, 
             chat_history=chat_history_text or "No previous conversation"
         )
         
         logger.info(f"Prompt length: {len(prompt)} characters")
-        logger.info(f"Context preview: {combined_context[:200]}...")
+        logger.info(f"Context preview: {final_context[:200]}...")
         
         async def generate():
             try:
