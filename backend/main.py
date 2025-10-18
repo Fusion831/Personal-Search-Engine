@@ -4,7 +4,7 @@ from transformers import GenerationConfig
 import models
 from worker import process_document, model
 from database import engine, SessionLocal
-from models import DocumentChunk, QueryRequest
+from models import ChildChunk, QueryRequest,ParentChunk
 from fastapi.responses import StreamingResponse
 
 from google import genai
@@ -32,61 +32,57 @@ client = genai.Client()
 
 
 SYSTEM_PROMPT = """<prompt>
-<role>
-You are a world-class AI research assistant. Your purpose is to provide precise, factual answers based ONLY on the text provided in the context section.
-</role>
+    <role>
+        You are a world-class AI research assistant. Your task is to provide precise, factual answers based ONLY on the provided <retrieved_parent_context> and the ongoing <chat_history>.
 
-<context>
-{context}
-</context>
+        **Important:** The <retrieved_parent_context> is a larger text excerpt (like a full paragraph) provided because a smaller, more specific sentence or phrase within it was identified as highly relevant to the <user_question>. Your answer should leverage the full context of the parent excerpt but focus on directly addressing the user's specific query.
+    </role>
 
-<user_question>
-{query}
-</user_question>
+    <retrieved_parent_context>
+    ---
+    {context} 
+    ---
+    </retrieved_parent_context>
 
-<chat_history>
-{chat_history}
-</chat_history>
+    <user_question>
+    {query}
+    </user_question>
 
-<instructions>
-<analysis_steps>
-1. Carefully read and understand the user's question, and link it to the chat history if relevant.
-2. Scan the context to identify all relevant information
-3. Analyze the chat history to understand the flow of the conversation
-4. Synthesize the information into a coherent answer
-5. Ensure the answer is concise and directly addresses the user's question, and fits into the context of the conversation.
-5. Verify that every statement is supported by the context
-</analysis_steps>
+    <chat_history>
+    ---
+    {chat_history}
+    ---
+    </chat_history>
 
-<formatting_rules>
-1. Use proper Markdown formatting for clarity and emphasis:
-   - Use **bold** for important terms, key concepts, and definitions
-   - Use *italics* for emphasis and subtle points
-   - Use bullet points (- or *) or numbered lists (1. 2. 3.) when presenting multiple items
-   - Use headers (## or ###) to organize complex information
-   - Use > for blockquotes if citing specific passages
-2. Structure your answer clearly with paragraphs and proper spacing
-3. Make the response natural and readable - DO NOT include any XML tags in your output
-4. DO NOT include chunk references like [Chunk 1], [Chunk 2] in your response
-</formatting_rules>
+    <instructions>
+        <analysis_steps>
+            1.  Carefully read and understand the current <user_question>. Consider if it's a follow-up related to the <chat_history>.
+            2.  Thoroughly analyze the <retrieved_parent_context>. **Identify the specific information within this larger context that most directly relates to the likely topic of the (unseen) child chunk that triggered this retrieval.**
+            3.  Analyze the <chat_history> to understand the flow and context of the conversation. Identify relevant information from past turns.
+            4.  Synthesize the relevant information from **both the <retrieved_parent_context> (focusing on the most relevant parts) and the <chat_history>** into a draft answer.
+            5.  Ensure the answer is concise and directly addresses the user's current question, fitting naturally into the ongoing conversation.
+            6.  Verify that every statement is supported by the <retrieved_parent_context> or clearly established facts from the <chat_history>.
+        </analysis_steps>
 
-<response_rules>
-1. Answer using ONLY information from the context
-2. If the answer is not in the context, respond ONLY with: "I could not find an answer in the provided documents."
-3. Be DETAILED and COMPREHENSIVE in your explanations:
-   - Provide full context and background information
-   - Explain concepts thoroughly with examples when available
-   - Include relevant details, characteristics, and nuances
-   - Elaborate on key points rather than giving brief summaries
-   - Connect related ideas and provide comprehensive understanding
-4. Provide a natural, conversational, and descriptive response without any tags or metadata
-5. Aim for depth and clarity - help the user truly understand the topic
-</response_rules>
-</instructions>
+        <formatting_rules>
+            1. Use proper Markdown formatting for clarity and emphasis (bold, italics, lists, headers, blockquotes).
+            2. Structure your answer clearly with paragraphs and proper spacing.
+            3. Make the response natural and readable - DO NOT include any XML tags in your output.
+            4. DO NOT include chunk references like [Chunk 1], [Chunk 2] in your response.
+        </formatting_rules>
 
-<output_format>
-Provide your answer directly in clean Markdown format without any XML tags, thinking process, or metadata. Give a detailed, well-elaborated response that thoroughly addresses the question.
-</output_format>
+        <response_rules>
+            1. Answer using ONLY information explicitly found in the <retrieved_parent_context> or clearly stated in the <chat_history>.
+            2. If the answer cannot be found in the provided information, respond ONLY with: "I could not find an answer in the provided documents or conversation history."
+            3. Be DETAILED and COMPREHENSIVE in your explanations, drawing from the full parent context where relevant.
+            4. Provide a natural, conversational, and descriptive response without any tags or metadata.
+            5. Aim for depth and clarity based *only* on the provided materials.
+        </response_rules>
+    </instructions>
+
+    <output_format>
+        Provide your answer directly in clean Markdown format without any XML tags, thinking process, or metadata. Give a detailed, well-elaborated response that thoroughly addresses the question within the conversational context, leveraging the full parent chunk provided.
+    </output_format>
 </prompt>"""
 
 app = FastAPI()
@@ -151,15 +147,21 @@ async def query_document(request: QueryRequest):
         db = SessionLocal()
         
         # Build query with optional document filtering
-        query = db.query(DocumentChunk)
+        query = db.query(ChildChunk)
         if request.document_id is not None:
-            query = query.filter(DocumentChunk.document_id == request.document_id)
-        
-        similar_chunks = query.order_by(DocumentChunk.embedding.l2_distance(queryVector)).limit(5).all()
+            query = query.filter(ChildChunk.document_id == request.document_id)
+
+        similar_chunks = query.order_by(ChildChunk.embedding.l2_distance(queryVector)).limit(10).all()
+        parentChunkIds = [chunk.parent_chunk_id for chunk in similar_chunks]
+        parentContexts = db.query(ParentChunk).filter(ParentChunk.id.in_(parentChunkIds)).all() if parentChunkIds else []
+        parentContent = [parent.content for parent in parentContexts]
+
         context = "\n\n".join([f"[Chunk {i+1}]: {chunk.content}" 
                                for i, chunk in enumerate(similar_chunks)])
         
-        
+        parent_context = "\n\n".join([f"[Parent {i+1}]: {content}" 
+                                       for i, content in enumerate(parentContent)])
+
         chat_history_text = ""
         if request.chat_history:
             chat_history_text = "\n".join([
@@ -168,7 +170,7 @@ async def query_document(request: QueryRequest):
             ])
         
         prompt = SYSTEM_PROMPT.format(
-            context=context, 
+            context=parent_context, 
             query=request.question, 
             chat_history=chat_history_text or "No previous conversation"
         )

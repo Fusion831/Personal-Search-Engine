@@ -6,7 +6,7 @@ from sentence_transformers import SentenceTransformer
 from io import BytesIO
 import logging
 from database import SessionLocal, engine, Base
-from models import DocumentChunk
+from models import ChildChunk, ParentChunk
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -28,12 +28,11 @@ model = SentenceTransformer("all-MiniLM-L6-v2")
 
 
 
+
 @celery_app.task
-@celery_app.task
-def process_document(file_contents,document_id):
-    db = None 
+def process_document(file_contents, document_id):
+    db = None
     try:
-        
         db = SessionLocal()
         logger.info("Database session started.")
 
@@ -43,29 +42,66 @@ def process_document(file_contents,document_id):
         for page in reader.pages:
             text += page.extract_text() + "\n"
 
-        chunks = chunkText(text, chunkSize=1000, chunkOverlap=200)
-        embeddings = model.encode(chunks)
-        logger.info(f"Created {len(chunks)} chunks and embeddings.")
+        
+        parent_chunk_objects = []
+        child_chunk_texts = [] 
+        parent_child_map = {} 
+
+        for paragraph in text.split("\n"):
+            if not paragraph.strip(): 
+                continue
+
+            
+            parent_chunk = ParentChunk(document_id=document_id, content=paragraph)
+            parent_chunk_objects.append(parent_chunk)
+            parent_child_map[id(parent_chunk)] = [] 
+
+            
+            child_texts_for_parent = chunkText(paragraph, chunkSize=500, chunkOverlap=100)
+            child_chunk_texts.extend(child_texts_for_parent)
+            parent_child_map[id(parent_chunk)].extend(child_texts_for_parent)
 
         
-        for chunk, embedding in zip(chunks, embeddings):
-            new_chunk_obj = DocumentChunk(content=chunk, embedding=embedding, document_id=document_id)
-            db.add(new_chunk_obj)
+        if not child_chunk_texts:
+             logger.info("No text found to process.")
+             return {"status": "success", "num_chunks": 0}
+
+        logger.info(f"Encoding {len(child_chunk_texts)} child chunks in batch...")
+        all_embeddings = model.encode(child_chunk_texts).tolist()
+        logger.info("Encoding complete.")
+
+        
+        embedding_index = 0
+        for parent_obj in parent_chunk_objects:
+            
+            db.add(parent_obj)
+            db.flush()
+
+           
+            child_texts = parent_child_map[id(parent_obj)]
+            for child_text in child_texts:
+                embedding = all_embeddings[embedding_index]
+                child_chunk = ChildChunk(
+                    parent_chunk_id=parent_obj.id,
+                    content=child_text,
+                    embedding=embedding
+                )
+                db.add(child_chunk)
+                embedding_index += 1
 
         
         db.commit()
-        logger.info("Successfully committed all chunks to the database.")
-        
-        return {"status": "success", "num_chunks": len(chunks)}
+        logger.info("Successfully committed all parent and child chunks.")
+        return {"status": "success", "num_chunks": len(child_chunk_texts)}
 
     except Exception as e:
         logger.error(f"An error occurred: {e}")
         if db:
-            db.rollback()  
+            db.rollback() # Roll back the transaction on error
         return {"status": "error", "message": str(e)}
 
     finally:
-        
+        # ALWAYS close the session
         if db:
             db.close()
             logger.info("Database session closed.")
