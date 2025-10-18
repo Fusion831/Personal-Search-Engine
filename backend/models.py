@@ -28,7 +28,12 @@ class ChildChunk(Base):
     content: Mapped[str] = mapped_column(Text, nullable=False)
     embedding: Mapped[list[float]] = mapped_column(Vector(384))
 
-
+class SummaryChunks(Base):
+    __tablename__ = "Summaries"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    document_id: Mapped[int] = mapped_column(Integer, ForeignKey("documents.id"), nullable=False)
+    summary_text: Mapped[str] = mapped_column(Text, nullable=False)
+    embedding: Mapped[list[float]] = mapped_column(Vector(384))
 
 class QueryRequest(BaseModel):
     question: str

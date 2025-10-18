@@ -6,14 +6,31 @@ from sentence_transformers import SentenceTransformer
 from io import BytesIO
 import logging
 from database import SessionLocal, engine, Base
-from models import ChildChunk, ParentChunk
+from models import ChildChunk, ParentChunk,SummaryChunks
 import re
+from google import genai
+from google.genai import types
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
 load_dotenv()
+client = genai.Client(api_key=os.getenv("GENAI_API_KEY"))
+
+
+
+SUMMARIZE_PROMPT = """<prompt>
+    <instruction>
+    Summarize the following text into a concise summary that captures the main points and key information.
+    </instruction>
+    <input_format>
+    {context}
+    </input_format>
+    <output_format>
+    Provide a clear and concise summary in paragraph form.
+    </output_format></prompt>
+"""
 
 
 
@@ -48,6 +65,27 @@ def process_document(file_contents, document_id):
         text = re.sub(r'(?<!\n)\n(?!\n)', ' ', text)  
         text = re.sub(r'\n{3,}', '\n\n', text)  
         text = re.sub(r' +', ' ', text)  
+
+        summary = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=SUMMARIZE_PROMPT.format(context=text),
+            config=types.GenerateContentConfig(
+                thinking_config=types.ThinkingConfig(thinking_budget=0)
+            ),
+        )
+        summary_text = summary.text.strip() if summary.text else "No summary generated."
+        logger.info("Summary generated.")
+
+        summaryEmbedding = model.encode([summary_text]).tolist()[0]
+
+        SummaryChunk = SummaryChunks(
+            document_id=document_id,
+            summary_text=summary_text,
+            embedding=summaryEmbedding
+        )
+        db.add(SummaryChunk)
+
+
         
         # Split into paragraphs
         paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
