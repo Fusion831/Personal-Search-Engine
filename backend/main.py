@@ -87,7 +87,7 @@ SYSTEM_PROMPT = """<prompt>
 </prompt>"""
 
 
-HyDe_Prompt = """Write a short paragraph that provides a direct and factual answer to the following question. Assume this answer is derived from a relevant document. Do not include any introductory phrases like \"Based on the document...\" or mention that this is a hypothetical answer.
+HyDe_Prompt = """Write a short 10-15 sentence paragraph that provides a direct and factual answer to the following question. Assume this answer is derived from a relevant document. Do not include any introductory phrases like \"Based on the document...\" or mention that this is a hypothetical answer.
 
 Question: {question}"""
 
