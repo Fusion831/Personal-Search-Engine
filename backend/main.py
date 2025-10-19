@@ -6,6 +6,7 @@ from worker import process_document, model
 from database import engine, SessionLocal
 from models import ChildChunk, QueryRequest,ParentChunk
 from fastapi.responses import StreamingResponse
+import numpy as np
 
 from google import genai
 from google.genai import types
@@ -173,7 +174,7 @@ async def query_document(request: QueryRequest):
         summary_distance = None
         if top_summary:
             
-            import numpy as np
+            
             summary_distance = np.linalg.norm(np.array(top_summary.embedding) - np.array(queryVector))
             logger.info(f"Top summary from document {top_summary.document_id} with L2 distance: {summary_distance:.4f}")
             logger.info(f"Summary preview: {top_summary.summary_text[:200]}...")
