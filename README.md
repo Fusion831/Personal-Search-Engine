@@ -795,95 +795,110 @@ Our router uses L2 distance comparison to make this decision automatically.
 #### Feature Ranking by Importance
 
 1. **Multi-turn Conversation Memory** (Critical)
-   - [ ] Maintain conversation context across multiple queries
-   - [ ] Enable follow-up question understanding with history awareness
+   - Maintain conversation context across multiple queries
 
 2. **Context Window Management** (High)
-   - [ ] Optimize chat history for token efficiency
-   - [ ] Sliding window for long conversations
+   - Optimize chat history for token efficiency
 
 3. **Conversation Summarization** (Medium)
-   - [ ] Summarize long conversation threads for context
-   - [ ] Enable context transfer across sessions
+   - Summarize long conversation threads for context
 
 ### Advanced Retrieval & Generation
 
 #### Feature Ranking by Importance
 
 1. **Hybrid Search** (Critical)
-   - [ ] Implement BM25 keyword-based search
-   - [ ] Combine with vector similarity for better recall
-   - [ ] Weighted fusion of both approaches
+   - Combine BM25 keyword search with vector similarity
 
 2. **Re-ranking with Cross-Encoders** (High)
-   - [ ] Add cross-encoder re-ranking stage after initial retrieval
-   - [ ] Improve ranking precision for top results
+   - Improve ranking precision for top results
 
-3. **Query Expansion Techniques** (High)
-   - [ ] Multi-query generation for improved recall
-   - [ ] Synonym and semantic expansion
+3. **Query Expansion** (High)
+   - Multi-query generation and semantic expansion for better recall
 
 4. **Multi-modal Support** (Medium)
-   - [ ] Extract and process images from PDFs
-   - [ ] Handle tables and structured data
-   - [ ] Multi-modal embedding support
+   - Extract and process images and tables from PDFs
 
 ### RAG Evaluation Pipeline with RAGAS
 
 #### Feature Ranking by Importance
 
 1. **Integrate RAGAS Framework** (Critical)
-   - [ ] Implement core RAGAS (Retrieval-Augmented Generation Assessment) integration
-   - [ ] Setup evaluation pipelines with standard metrics
+   - Core integration of Retrieval-Augmented Generation Assessment
 
 2. **Comprehensive Evaluation Metrics** (Critical)
-   - [ ] Retrieval Metrics: Context Precision, Context Recall, Context Relevancy
-   - [ ] Generation Metrics: Faithfulness, Answer Relevancy, Answer Semantic Similarity
-   - [ ] LLM-as-a-Judge: End-to-end evaluation using LLM-based scoring
+   - Retrieval metrics: Context Precision, Context Recall, Context Relevancy
+   - Generation metrics: Faithfulness, Answer Relevancy, Answer Semantic Similarity
+   - LLM-as-a-Judge scoring for end-to-end evaluation
 
 3. **Deep RAG Component Analysis** (High)
-   - [ ] Measure query transformation (HyDe) effectiveness and impact on retrieval
-   - [ ] Evaluate intelligent routing accuracy (summary vs. parent-child decision making)
-   - [ ] Analyze parent-child chunking impact on retrieval precision vs. recall trade-off
-   - [ ] Track parent deduplication impact on token optimization and context quality
+   - Measure HyDe query transformation effectiveness
+   - Evaluate intelligent routing accuracy
+   - Analyze parent-child chunking impact on precision/recall trade-off
+   - Track parent deduplication impact on token optimization
 
 4. **Evaluation Dataset Management** (High)
-   - [ ] Create evaluation dataset system for benchmark queries and ground truth answers
-   - [ ] Automated dataset generation and curation tools
+   - System for benchmark queries and ground truth answers
+   - Automated dataset generation tools
 
 5. **Automated Regression Testing** (Medium)
-   - [ ] Setup pipeline changes regression testing
-   - [ ] Benchmark against baseline retrieval methods
+   - Pipeline changes regression testing
+   - Baseline retrieval method benchmarking
 
-6. **Evaluation Dashboards & Reporting** (Medium)
-   - [ ] Build evaluation dashboards for metric visualization
-   - [ ] Generate automated reports on RAG pipeline health
+6. **Evaluation Dashboards** (Medium)
+   - Metric visualization and reporting dashboards
 
 ### Production Hardening & Security
 
 #### Feature Ranking by Importance
 
 1. **Authentication & Authorization** (Critical)
-   - [ ] Implement OAuth2 for user authentication
-   - [ ] Role-based access control (RBAC)
+   - OAuth2 implementation for user authentication
+   - Role-based access control (RBAC)
 
 2. **Monitoring & Observability** (Critical)
-   - [ ] Setup Prometheus metrics collection
-   - [ ] Grafana dashboards for system health
-   - [ ] Distributed tracing for requests
+   - Prometheus metrics and Grafana dashboards
+   - Distributed tracing for request tracking
 
 3. **Multi-tenancy Support** (High)
-   - [ ] Tenant isolation and data segregation
-   - [ ] Per-tenant configuration and customization
+   - Tenant isolation and data segregation
 
 4. **Rate Limiting & Quota Management** (High)
-   - [ ] API rate limiting per user/tenant
-   - [ ] Token quota management for API calls
+   - Per-user/tenant API rate limiting and token quotas
 
 5. **Kubernetes Deployment** (Medium)
-   - [ ] Create Kubernetes manifests
-   - [ ] Enable horizontal scaling
-   - [ ] Service mesh integration
+   - Kubernetes manifests for scalable deployment
+
+### Autonomous Document Monitoring & CRON-based Ingestion
+
+Use case: Students continuously add study materials to a folder, and the system automatically processes new documents in real-time without manual uploads.
+
+#### Feature Ranking by Importance
+
+1. **Folder Monitoring System** (Critical)
+   - Watches designated folders for new PDF files
+   - Automatically triggers ingestion pipeline on file addition
+   - Supports multiple monitored folders per workspace
+
+2. **Automatic Chunk Generation** (Critical)
+   - Seamlessly extends existing pipelines for new documents
+   - Generates summaries, parent chunks, and child chunks automatically
+   - Maintains vector embeddings in PostgreSQL
+
+3. **CRON Scheduler Integration** (High)
+   - Schedule batch processing at fixed intervals
+   - Configurable scheduling for different folders
+   - Handles large document batches efficiently
+
+4. **Real-time Processing Notifications** (High)
+   - Notify users when new documents are processed
+   - Track processing status and completion times
+   - Queue management for pending documents
+
+5. **Document Versioning & Updates** (Medium)
+   - Handle updated documents (re-index with versioning)
+   - Maintain processing history and audit trails
+   - Prevent duplicate ingestion
 
 ---
 
@@ -905,22 +920,13 @@ Please open an issue first to discuss what you'd like to change.
 
 ---
 
-## 👨‍💻 Author
-
-**Daksh Patel**  
-Building production ML systems from first principles.
-
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue)](https://www.linkedin.com/in/your-profile)
-[![GitHub](https://img.shields.io/badge/GitHub-Follow-black)](https://github.com/Fusion831)
-
----
 
 ## 🙏 Acknowledgments
 
 - Google Gemini team for the excellent Python SDK
 - Sentence-Transformers for open-source embedding models
 - The FastAPI and PostgreSQL communities
-- All contributors to the open-source libraries used in this project
+
 
 ---
 
