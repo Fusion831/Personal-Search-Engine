@@ -788,26 +788,102 @@ Our router uses L2 distance comparison to make this decision automatically.
 
 ---
 
-## 🔮 Future Roadmap
+## 🔮 Future Features
 
-### Phase 1: Conversational RAG (In Progress)
-- [ ] Multi-turn conversation memory
-- [ ] Context window management for chat history
-- [ ] Follow-up question understanding
-- [ ] Conversation summarization for long threads
+### Conversational Intelligence
 
-### Phase 2: Advanced Features
-- [ ] Multi-modal support (images, tables from PDFs)
-- [ ] Hybrid search (BM25 + vector similarity)
-- [ ] Re-ranking with cross-encoders
-- [ ] Query expansion techniques
+#### Feature Ranking by Importance
 
-### Phase 3: Production Hardening
-- [ ] Authentication & authorization (OAuth2)
-- [ ] Multi-tenancy support
-- [ ] Rate limiting & quota management
-- [ ] Monitoring with Prometheus + Grafana
-- [ ] Kubernetes deployment manifests
+1. **Multi-turn Conversation Memory** (Critical)
+   - [ ] Maintain conversation context across multiple queries
+   - [ ] Enable follow-up question understanding with history awareness
+
+2. **Context Window Management** (High)
+   - [ ] Optimize chat history for token efficiency
+   - [ ] Sliding window for long conversations
+
+3. **Conversation Summarization** (Medium)
+   - [ ] Summarize long conversation threads for context
+   - [ ] Enable context transfer across sessions
+
+### Advanced Retrieval & Generation
+
+#### Feature Ranking by Importance
+
+1. **Hybrid Search** (Critical)
+   - [ ] Implement BM25 keyword-based search
+   - [ ] Combine with vector similarity for better recall
+   - [ ] Weighted fusion of both approaches
+
+2. **Re-ranking with Cross-Encoders** (High)
+   - [ ] Add cross-encoder re-ranking stage after initial retrieval
+   - [ ] Improve ranking precision for top results
+
+3. **Query Expansion Techniques** (High)
+   - [ ] Multi-query generation for improved recall
+   - [ ] Synonym and semantic expansion
+
+4. **Multi-modal Support** (Medium)
+   - [ ] Extract and process images from PDFs
+   - [ ] Handle tables and structured data
+   - [ ] Multi-modal embedding support
+
+### RAG Evaluation Pipeline with RAGAS
+
+#### Feature Ranking by Importance
+
+1. **Integrate RAGAS Framework** (Critical)
+   - [ ] Implement core RAGAS (Retrieval-Augmented Generation Assessment) integration
+   - [ ] Setup evaluation pipelines with standard metrics
+
+2. **Comprehensive Evaluation Metrics** (Critical)
+   - [ ] Retrieval Metrics: Context Precision, Context Recall, Context Relevancy
+   - [ ] Generation Metrics: Faithfulness, Answer Relevancy, Answer Semantic Similarity
+   - [ ] LLM-as-a-Judge: End-to-end evaluation using LLM-based scoring
+
+3. **Deep RAG Component Analysis** (High)
+   - [ ] Measure query transformation (HyDe) effectiveness and impact on retrieval
+   - [ ] Evaluate intelligent routing accuracy (summary vs. parent-child decision making)
+   - [ ] Analyze parent-child chunking impact on retrieval precision vs. recall trade-off
+   - [ ] Track parent deduplication impact on token optimization and context quality
+
+4. **Evaluation Dataset Management** (High)
+   - [ ] Create evaluation dataset system for benchmark queries and ground truth answers
+   - [ ] Automated dataset generation and curation tools
+
+5. **Automated Regression Testing** (Medium)
+   - [ ] Setup pipeline changes regression testing
+   - [ ] Benchmark against baseline retrieval methods
+
+6. **Evaluation Dashboards & Reporting** (Medium)
+   - [ ] Build evaluation dashboards for metric visualization
+   - [ ] Generate automated reports on RAG pipeline health
+
+### Production Hardening & Security
+
+#### Feature Ranking by Importance
+
+1. **Authentication & Authorization** (Critical)
+   - [ ] Implement OAuth2 for user authentication
+   - [ ] Role-based access control (RBAC)
+
+2. **Monitoring & Observability** (Critical)
+   - [ ] Setup Prometheus metrics collection
+   - [ ] Grafana dashboards for system health
+   - [ ] Distributed tracing for requests
+
+3. **Multi-tenancy Support** (High)
+   - [ ] Tenant isolation and data segregation
+   - [ ] Per-tenant configuration and customization
+
+4. **Rate Limiting & Quota Management** (High)
+   - [ ] API rate limiting per user/tenant
+   - [ ] Token quota management for API calls
+
+5. **Kubernetes Deployment** (Medium)
+   - [ ] Create Kubernetes manifests
+   - [ ] Enable horizontal scaling
+   - [ ] Service mesh integration
 
 ---
 
